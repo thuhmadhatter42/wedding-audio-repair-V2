@@ -18,7 +18,7 @@ logger = logging.getLogger(__name__)
 # Configuration
 UPLOAD_FOLDER = 'uploads'
 MAX_FILE_SIZE = 100 * 1024 * 1024  # 100MB
-ALLOWED_EXTENSIONS = {'mp3', 'wav', 'mp4', 'm4a', 'aac', 'flac', 'ogg', 'mov', 'avi'}
+ALLOWED_EXTENSIONS = {'mp3', 'wav', 'mp4', 'm4a', 'aac', 'flac', 'ogg', 'mov', 'avi', 'aiff', 'wma', 'webm', 'mkv'}
 
 # Stripe configuration
 stripe.api_key = os.environ.get('STRIPE_SECRET_KEY', 'sk_test_...')  # Replace with your test key
