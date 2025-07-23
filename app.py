@@ -332,6 +332,46 @@ def payment_success(order_id):
         logger.error(f"Error recording payment for order {order_id}: {str(e)}")
         return jsonify({"error": "Failed to record payment"}), 500
 
+@app.route('/api/download/<file_id>', methods=['GET'])
+def download_file(file_id):
+    """Download a file by its file ID"""
+    try:
+        # Find the file with the given file_id
+        if not os.path.exists(UPLOAD_FOLDER):
+            return jsonify({"error": "Upload folder not found"}), 404
+        
+        # Look for files that start with the file_id
+        matching_files = []
+        for filename in os.listdir(UPLOAD_FOLDER):
+            if filename.startswith(file_id):
+                matching_files.append(filename)
+        
+        if not matching_files:
+            return jsonify({"error": "File not found"}), 404
+        
+        # Use the first matching file
+        filename = matching_files[0]
+        file_path = os.path.join(UPLOAD_FOLDER, filename)
+        
+        if not os.path.exists(file_path):
+            return jsonify({"error": "File not found on disk"}), 404
+        
+        # Get original filename (remove the UUID prefix)
+        original_name = filename.split('.', 1)[1] if '.' in filename else filename
+        
+        logger.info(f"Downloading file {file_id}: {filename}")
+        
+        return send_from_directory(
+            UPLOAD_FOLDER, 
+            filename, 
+            as_attachment=True,
+            download_name=f"downloaded_{original_name}"
+        )
+        
+    except Exception as e:
+        logger.error(f"Error downloading file {file_id}: {str(e)}")
+        return jsonify({"error": "Failed to download file"}), 500
+
 @app.route('/api/orders', methods=['GET'])
 def list_orders():
     """List all orders (for admin/debugging)"""
