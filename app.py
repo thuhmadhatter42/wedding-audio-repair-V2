@@ -50,6 +50,10 @@ def health_check():
     # Health check endpoint for Railway deployment - v2
     return jsonify({"status": "healthy", "timestamp": datetime.now().isoformat()})
 
+@app.route('/test', methods=['GET'])
+def test_endpoint():
+    return jsonify({"message": "Test endpoint working", "routes": [rule.rule for rule in app.url_map.iter_rules()]})
+
 @app.route('/api/create-order', methods=['POST'])
 def create_order():
     """Create a new order after successful file upload"""
