@@ -6,6 +6,7 @@ import json
 from datetime import datetime
 import logging
 from werkzeug.utils import secure_filename
+import stripe
 
 app = Flask(__name__)
 CORS(app)  # Enable CORS for all routes
@@ -18,6 +19,10 @@ logger = logging.getLogger(__name__)
 UPLOAD_FOLDER = 'uploads'
 MAX_FILE_SIZE = 100 * 1024 * 1024  # 100MB
 ALLOWED_EXTENSIONS = {'mp3', 'wav', 'mp4', 'm4a', 'aac', 'flac', 'ogg', 'mov', 'avi'}
+
+# Stripe configuration
+stripe.api_key = os.environ.get('STRIPE_SECRET_KEY', 'sk_test_...')  # Replace with your test key
+STRIPE_PUBLISHABLE_KEY = os.environ.get('STRIPE_PUBLISHABLE_KEY', 'pk_test_...')  # Replace with your test key
 
 # Create directories if they don't exist
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
@@ -79,6 +84,44 @@ def list_uploaded_files():
     except Exception as e:
         logger.error(f"Error listing files: {str(e)}")
         return jsonify({"error": "Failed to list files"}), 500
+
+@app.route('/api/create-payment-intent', methods=['POST'])
+def create_payment_intent():
+    """Create a Stripe payment intent"""
+    try:
+        data = request.get_json()
+        
+        # Validate required fields
+        if not data or 'amount' not in data:
+            return jsonify({"error": "Amount is required"}), 400
+        
+        amount = int(data['amount'])  # Amount in cents
+        currency = data.get('currency', 'usd')
+        
+        # Create payment intent
+        intent = stripe.PaymentIntent.create(
+            amount=amount,
+            currency=currency,
+            metadata={
+                'service_type': data.get('service_type', 'audio_restoration'),
+                'file_id': data.get('file_id', ''),
+                'customer_email': data.get('customer_email', '')
+            }
+        )
+        
+        logger.info(f"Created payment intent {intent.id} for ${amount/100}")
+        
+        return jsonify({
+            'client_secret': intent.client_secret,
+            'payment_intent_id': intent.id
+        })
+        
+    except stripe.error.StripeError as e:
+        logger.error(f"Stripe error: {str(e)}")
+        return jsonify({"error": "Payment processing error"}), 500
+    except Exception as e:
+        logger.error(f"Error creating payment intent: {str(e)}")
+        return jsonify({"error": "Failed to create payment intent"}), 500
 
 @app.route('/api/create-order', methods=['POST'])
 def create_order():
