@@ -142,6 +142,58 @@ def upload_file_direct():
         logger.error(f"Error uploading file: {str(e)}")
         return jsonify({"error": "Failed to upload file"}), 500
 
+@app.route('/api/upload', methods=['POST'])
+def upload_file_direct():
+    """Handle direct file upload without requiring an order ID first"""
+    try:
+        # Check if file is in request
+        if 'file' not in request.files:
+            return jsonify({"error": "No file provided"}), 400
+        
+        file = request.files['file']
+        
+        # Check if file is selected
+        if file.filename == '':
+            return jsonify({"error": "No file selected"}), 400
+        
+        # Validate file type
+        if not allowed_file(file.filename):
+            return jsonify({"error": "Invalid file type. Please upload an audio or video file."}), 400
+        
+        # Check file size
+        file.seek(0, os.SEEK_END)
+        file_size = file.tell()
+        file.seek(0)
+        
+        if file_size > MAX_FILE_SIZE:
+            return jsonify({"error": "File size exceeds 100MB limit"}), 400
+        
+        # Generate unique file ID
+        file_id = str(uuid.uuid4())
+        
+        # Generate secure filename
+        filename = secure_filename(file.filename)
+        file_extension = filename.rsplit('.', 1)[1].lower()
+        unique_filename = f"{file_id}.{file_extension}"
+        
+        # Save file
+        file_path = os.path.join(UPLOAD_FOLDER, unique_filename)
+        file.save(file_path)
+        
+        logger.info(f"File uploaded with ID {file_id}: {filename} ({file_size} bytes)")
+        
+        return jsonify({
+            "success": True,
+            "message": "File uploaded successfully",
+            "file_id": file_id,
+            "filename": filename,
+            "file_size": file_size
+        })
+        
+    except Exception as e:
+        logger.error(f"Error uploading file: {str(e)}")
+        return jsonify({"error": "Failed to upload file"}), 500
+
 @app.route('/api/upload-file/<order_id>', methods=['POST'])
 def upload_file(order_id):
     """Handle file upload for a specific order"""
