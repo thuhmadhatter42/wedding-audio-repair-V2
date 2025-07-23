@@ -47,6 +47,7 @@ def load_order(order_id):
 
 @app.route('/health', methods=['GET'])
 def health_check():
+    # Health check endpoint for Railway deployment
     return jsonify({"status": "healthy", "timestamp": datetime.now().isoformat()})
 
 @app.route('/api/create-order', methods=['POST'])
