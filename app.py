@@ -54,6 +54,32 @@ def health_check():
 def test_endpoint():
     return jsonify({"message": "Test endpoint working", "routes": [rule.rule for rule in app.url_map.iter_rules()]})
 
+@app.route('/api/files', methods=['GET'])
+def list_uploaded_files():
+    """List all uploaded files (for debugging)"""
+    try:
+        files = []
+        if os.path.exists(UPLOAD_FOLDER):
+            for filename in os.listdir(UPLOAD_FOLDER):
+                file_path = os.path.join(UPLOAD_FOLDER, filename)
+                if os.path.isfile(file_path):
+                    file_size = os.path.getsize(file_path)
+                    files.append({
+                        "filename": filename,
+                        "size": file_size,
+                        "size_mb": round(file_size / (1024 * 1024), 2)
+                    })
+        
+        return jsonify({
+            "upload_folder": UPLOAD_FOLDER,
+            "files": files,
+            "total_files": len(files)
+        })
+        
+    except Exception as e:
+        logger.error(f"Error listing files: {str(e)}")
+        return jsonify({"error": "Failed to list files"}), 500
+
 @app.route('/api/create-order', methods=['POST'])
 def create_order():
     """Create a new order after successful file upload"""
